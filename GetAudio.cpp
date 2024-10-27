@@ -87,10 +87,9 @@ HRESULT CaptureAudio() {
 
 		hr = pPropertyStore->GetValue(PKEY_Device_FriendlyName, &varName);
 		if (SUCCEEDED(hr)) {
-			// 将设备名称转换为 std::wstring
+
 			std::wstring deviceName(varName.pwszVal);
 
-			// 将 std::wstring 转换为 std::string
 			std::string deviceNameStr(deviceName.begin(), deviceName.end());
 
 			for (char& ch : deviceNameStr) {
