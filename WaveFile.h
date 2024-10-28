@@ -5,6 +5,7 @@
 #include <Windows.h>
 #include <iostream>
 #include <Audioclient.h>
+#include <ShlObj.h>
 
 struct WAVEHEADER
 {
@@ -28,6 +29,7 @@ class WaveFile
 {
 	public :
 	bool SaveAsWave(BYTE* buffer, size_t bufferSize, WAVEFORMATEX* waveFormate);
+	void printWaveFormatex(WAVEFORMATEX* pwfx);
 
 	private:
 

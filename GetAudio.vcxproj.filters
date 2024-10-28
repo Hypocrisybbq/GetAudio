@@ -21,9 +21,15 @@
     <ClCompile Include="WaveFile.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="SocketHelper.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="WaveFile.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketHelper.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

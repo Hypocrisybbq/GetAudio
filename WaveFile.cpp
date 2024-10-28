@@ -1,6 +1,21 @@
 ﻿#include "WaveFile.h"
 
 
+void WaveFile::printWaveFormatex(WAVEFORMATEX* pwfx) {
+	UINT32 sampleRate = pwfx->nSamplesPerSec;
+	std::cout << "sampleRate(采样率): " << sampleRate << std::endl;
+
+	UINT32 numChannels = pwfx->nChannels;
+	std::cout << "numChannels(通道数): " << numChannels << std::endl;
+
+	UINT32 bitsPerSample = pwfx->wBitsPerSample;
+	std::cout << "bitsPerSample(位深): " << bitsPerSample << std::endl;
+
+	UINT32 bytesPerFrame = (numChannels * bitsPerSample) / 8;
+	std::cout << "bytesPerFrame(一帧的数据大小): " << bytesPerFrame << std::endl;
+}
+
+
 bool WaveFile::SaveAsWave(BYTE* buffer, size_t bufferSize, WAVEFORMATEX* waveFormate) {
 
 	if (!createHandle(buffer, bufferSize, waveFormate)) {
@@ -18,7 +33,9 @@ bool WaveFile::createHandle(BYTE* buffer, size_t bufferSize, WAVEFORMATEX* waveF
 	SYSTEMTIME sysTime;
 	GetLocalTime(&sysTime);
 	wchar_t waveFileName[_MAX_PATH];
-	swprintf_s(waveFileName, _MAX_PATH, L".\\WAV_%04d%02d%02d_%02d-%02d-%02d.wav", sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute, sysTime.wSecond);
+	PWSTR desktopPath = NULL;
+	HRESULT result = SHGetKnownFolderPath(FOLDERID_Desktop, 0, NULL, &desktopPath);
+	swprintf_s(waveFileName, _MAX_PATH, L"%s\\WAV_%04d%02d%02d_%02d-%02d-%02d.wav", desktopPath, sysTime.wYear, sysTime.wMonth, sysTime.wDay, sysTime.wHour, sysTime.wMinute, sysTime.wSecond);
 
 	HANDLE waveHandle = CreateFile(waveFileName, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
@@ -74,9 +91,6 @@ bool WaveFile::writeToWaveFile(HANDLE FileHandle, const BYTE* Buffer, const size
 	DWORD bufferSize = static_cast<DWORD>(BufferSize);
 	memcpy(waveFilePointer, &bufferSize, sizeof(DWORD));
 	waveFilePointer += sizeof(DWORD);
-
-	//////  *(reinterpret_cast<DWORD*>(waveFilePointer)) = static_cast<DWORD>(BufferSize);
-	////// waveFilePointer += sizeof(DWORD);
 
 
 	memcpy(waveFilePointer, Buffer, BufferSize);

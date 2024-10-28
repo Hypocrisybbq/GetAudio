@@ -1,58 +1,18 @@
-﻿#include <WinSock2.h>
+﻿
 #include <WS2tcpip.h>
-#pragma comment(lib, "Ws2_32.lib")
-#include <iostream>
 
-#include <Windows.h>
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
 #include <functiondiscoverykeys_devpkey.h>
-#include <algorithm>
+
 
 #include "WaveFile.h"
-
-void printpwfx(WAVEFORMATEX* pwfx) {
-	UINT32 sampleRate = pwfx->nSamplesPerSec;
-	std::cout << "sampleRate(采样率): " << sampleRate << std::endl;
-
-	UINT32 numChannels = pwfx->nChannels;
-	std::cout << "numChannels(通道数): " << numChannels << std::endl;
-
-	UINT32 bitsPerSample = pwfx->wBitsPerSample;
-	std::cout << "bitsPerSample(位深): " << bitsPerSample << std::endl;
-
-	UINT32 bytesPerFrame = (numChannels * bitsPerSample) / 8;
-	std::cout << "bytesPerFrame(一帧的数据大小): " << bytesPerFrame << std::endl;
-}
-
-const int PACKET_SIZE = 1024; // 每个数据包的大小
-
-void sendAudioData(const std::vector<BYTE>& audioData, SOCKET& sock, sockaddr_in& destAddr) {
-	size_t totalSize = audioData.size();
-	size_t numPackets = totalSize / PACKET_SIZE + (totalSize % PACKET_SIZE != 0 ? 1 : 0);
-
-	for (size_t i = 0; i < numPackets; ++i) {
-		size_t offset = i * PACKET_SIZE;
-		size_t bytesToSend = std::min<size_t>(PACKET_SIZE, totalSize - offset);
-		const char* info = reinterpret_cast<const char*>(audioData.data() + offset);
-		
-		int bytesSent = sendto(sock, info, bytesToSend, 0, (struct sockaddr*)&destAddr, sizeof(destAddr));
-		if (bytesSent == SOCKET_ERROR) {
-			std::cerr << "sendto failed with error: " << WSAGetLastError() << std::endl;
-			return;
-		}
-		std::cout << "Sent packet " << i + 1 << "/" << numPackets << " (" << bytesSent << " bytes)" << std::endl;
-	}
-}
-
+#include "SocketHelper.h"
 
 
 HRESULT CaptureAudio() {
 	WaveFile waveFile;
+	SocketHelper socketHelper;
 	HRESULT hr;
 	REFERENCE_TIME hnsRequestedDuration = 10000000;  // 1秒的缓冲区
 	UINT32 bufferFrameCount;
@@ -66,7 +26,7 @@ HRESULT CaptureAudio() {
 	IMMDevice* pDevice = nullptr;
 	IAudioClient* pAudioClient = nullptr;
 	IAudioCaptureClient* pCaptureClient = nullptr;
-	DWORD totalCaptureTime = 10000;  // 捕获10秒的音频
+	DWORD totalCaptureTime = 4000;  // 捕获4秒的音频
 	DWORD startTime = GetTickCount64();
 	std::vector<BYTE> audioData;
 	IPropertyStore* pPropertyStore;
@@ -110,7 +70,7 @@ HRESULT CaptureAudio() {
 
 	hr = pAudioClient->GetMixFormat(&pwfx);
 	if (FAILED(hr)) goto Exit;
-	printpwfx(pwfx);
+	waveFile.printWaveFormatex(pwfx);
 
 	hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, hnsRequestedDuration, 0, pwfx, nullptr);
 	if (FAILED(hr)) goto Exit;
@@ -166,39 +126,17 @@ HRESULT CaptureAudio() {
 		waveFile.SaveAsWave(audioData.data(), audioData.size(), pwfx);
 
 
-		WSADATA wsaData;
-		WSAStartup(MAKEWORD(2, 2), &wsaData);
+		//开始传输数据
+		bool helpResult = socketHelper.initSocket(2, 2, "192.168.0.101", 8848);// "192.168.137.226"
 
+		if (!helpResult) {
+			goto Exit;
+		}
 
-		//AF_INET :Address Family : Internet (网络地址族,一般用作IPv4)
-		//SOCK_DGRAM :socket datagram(套接字 数据报)
-		//IPPROTO_UDP: ip protocol udp(使用 udp 协议)
+		//const char* sendData = u8"这是来自客户端的消息";
+		socketHelper.sendData(audioData);
+		socketHelper.closeSocket();
 
-		SOCKET desktopSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-
-
-		// 目标地址和端口
-		sockaddr_in desktopAddr;
-		desktopAddr.sin_family = AF_INET;
-		desktopAddr.sin_port = htons(8848); // 目标端口
-		inet_pton(AF_INET, "192.168.0.103", &desktopAddr.sin_addr.s_addr); // 目标IP地址
-
-		const char* sendData = u8"这是来自客户端的消息";
-		sendto(desktopSocket, sendData, strlen(sendData), 0, (sockaddr*)&desktopAddr, sizeof(desktopAddr));
-
-		sendAudioData(audioData, desktopSocket, desktopAddr);
-		// 
-		//sendto(desktopSocket,)
-		//int sendResult = sendto(desktopSocket, reinterpret_cast<const char*>(audioData.data()), audioData.size(), 0, (sockaddr*)&desktopAddr, sizeof(desktopAddr));
-
-		//if (sendResult == SOCKET_ERROR) {
-		//	std::cerr << "sendto failed with error: " << WSAGetLastError() << std::endl;
-		//}
-		//else {
-		//	std::cout << "Sent  success" << std::endl;
-		//}
-		closesocket(desktopSocket);
-		WSACleanup();
 		return hr;
 	}
 	else {
