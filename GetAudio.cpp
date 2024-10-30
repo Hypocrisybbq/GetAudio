@@ -127,7 +127,7 @@ HRESULT CaptureAudio() {
 
 
 		//开始传输数据
-		bool helpResult = socketHelper.initSocket(2, 2, "192.168.0.101", 8848);// "192.168.137.226"
+		bool helpResult = socketHelper.initSocket(2, 2, "192.168.0.100", 8848);// "192.168.137.226"
 
 		if (!helpResult) {
 			goto Exit;
