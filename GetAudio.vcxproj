@@ -129,10 +129,12 @@
   <ItemGroup>
     <ClCompile Include="GetAudio.cpp" />
     <ClCompile Include="SocketHelper.cpp" />
+    <ClCompile Include="TcpServer.cpp" />
     <ClCompile Include="WaveFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SocketHelper.h" />
+    <ClInclude Include="TcpServer.h" />
     <ClInclude Include="WaveFile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

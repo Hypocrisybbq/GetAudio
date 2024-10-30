@@ -16,7 +16,8 @@ class SocketHelper
 {
 	public:
 	bool initSocket(int major, int minor, const char* ip, u_short host);
-	bool sendData(const std::vector<BYTE>& audioData);
+	bool sendDatas(const std::vector<BYTE>& audioData);
+	bool sendData(const BYTE* audioData);
 	bool closeSocket() const;
 
 	private:

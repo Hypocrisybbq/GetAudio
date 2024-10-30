@@ -8,11 +8,13 @@
 
 #include "WaveFile.h"
 #include "SocketHelper.h"
+#include "TcpServer.h"
 
 
 HRESULT CaptureAudio() {
 	WaveFile waveFile;
-	SocketHelper socketHelper;
+	TcpServer tcpServer(8848);
+	//SocketHelper socketHelper;
 	HRESULT hr;
 	REFERENCE_TIME hnsRequestedDuration = 10000000;  // 1秒的缓冲区
 	UINT32 bufferFrameCount;
@@ -26,7 +28,7 @@ HRESULT CaptureAudio() {
 	IMMDevice* pDevice = nullptr;
 	IAudioClient* pAudioClient = nullptr;
 	IAudioCaptureClient* pCaptureClient = nullptr;
-	DWORD totalCaptureTime = 4000;  // 捕获4秒的音频
+	DWORD totalCaptureTime = 6000;  // 捕获4秒的音频
 	DWORD startTime = GetTickCount64();
 	std::vector<BYTE> audioData;
 	IPropertyStore* pPropertyStore;
@@ -70,6 +72,7 @@ HRESULT CaptureAudio() {
 
 	hr = pAudioClient->GetMixFormat(&pwfx);
 	if (FAILED(hr)) goto Exit;
+
 	waveFile.printWaveFormatex(pwfx);
 
 	hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, hnsRequestedDuration, 0, pwfx, nullptr);
@@ -123,19 +126,24 @@ HRESULT CaptureAudio() {
 		sumFramesAvailable = 0;
 		std::cout << "audioData.size() 总音频的数据大小: " << audioData.size() << std::endl;
 
-		waveFile.SaveAsWave(audioData.data(), audioData.size(), pwfx);
-
-
-		//开始传输数据
-		bool helpResult = socketHelper.initSocket(2, 2, "192.168.0.100", 8848);// "192.168.137.226"
-
-		if (!helpResult) {
-			goto Exit;
+		if (tcpServer.start()) {
+			//tcpServer.receiveData();
+			tcpServer.sendData(audioData);
 		}
 
-		//const char* sendData = u8"这是来自客户端的消息";
-		socketHelper.sendData(audioData);
-		socketHelper.closeSocket();
+		//waveFile.SaveAsWave(audioData.data(), audioData.size(), pwfx);
+
+
+		////开始传输数据
+		//bool helpResult = socketHelper.initSocket(2, 2, "192.168.0.100", 8848);// "192.168.137.226"
+
+		//if (!helpResult) {
+		//	goto Exit;
+		//}
+
+		////const char* sendData = u8"这是来自客户端的消息";
+		//socketHelper.sendDatas(audioData);
+		//socketHelper.closeSocket();
 
 		return hr;
 	}
